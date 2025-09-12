@@ -55,7 +55,7 @@ fn get_task_by_id(task_vec: &mut TaskList, id: u16) -> Result<&mut Task> {
 }
 
 fn print_tasks(task_vec: &TaskList) -> Result<()> {
-    if task_vec.task.len() == 0 {
+    if task_vec.task.is_empty() {
         println!("No tasks yet. Create one with `task add \"My task\"`");
     }
 
@@ -90,8 +90,8 @@ fn print_tasks(task_vec: &TaskList) -> Result<()> {
     Ok(())
 }
 
-fn delete_task(mut task_vec: &mut TaskList, id: u16, noconfirm: bool) -> Result<()> {
-    let task = get_task_by_id(&mut task_vec, id)?;
+fn delete_task(task_vec: &mut TaskList, id: u16, noconfirm: bool) -> Result<()> {
+    let task = get_task_by_id(task_vec, id)?;
     if noconfirm || get_confirmation(&task.name)? {
         println!("Deleting task '{}'", task.name);
         task_vec.task.retain(|task| task.id != id);
@@ -133,8 +133,8 @@ fn edit_task(task_vec: &mut TaskList, id: u16, name: Option<&str>, expiration: O
     Ok(())
 }
 
-fn finish_task(mut task_vec: &mut TaskList, id: u16) -> Result<()> {
-    let task = get_task_by_id(&mut task_vec, id)?;
+fn finish_task(task_vec: &mut TaskList, id: u16) -> Result<()> {
+    let task = get_task_by_id(task_vec, id)?;
     task.finished = !task.finished;
     if task.finished {
         println!("Finished task {}", id);
@@ -152,12 +152,12 @@ fn parse_to_unix(input: &str) -> Option<i64> {
     let re_relative = Regex::new(r"(?i)(?:(\d+)y)?(?:(\d+)m)?(?:(\d+)w)?(?:(\d+)d)?(?:(\d+)h)?(?:(\d+)min)?$").unwrap();
     if let Some(caps) = re_relative.captures(input) {
         let mut duration = Duration::seconds(0);
-        if let Some(y) = caps.get(1) { duration = duration + Duration::days(y.as_str().parse::<i64>().unwrap() * 365); }
-        if let Some(m) = caps.get(2) { duration = duration + Duration::days(m.as_str().parse::<i64>().unwrap() * 30); }
-        if let Some(w) = caps.get(3) { duration = duration + Duration::days(w.as_str().parse::<i64>().unwrap() * 7); }
-        if let Some(d) = caps.get(4) { duration = duration + Duration::days(d.as_str().parse::<i64>().unwrap()); }
-        if let Some(h) = caps.get(5) { duration = duration + Duration::hours(h.as_str().parse::<i64>().unwrap()); }
-        if let Some(min) = caps.get(6) { duration = duration + Duration::minutes(min.as_str().parse::<i64>().unwrap()); }
+        if let Some(y) = caps.get(1) { duration += Duration::days(y.as_str().parse::<i64>().unwrap() * 365); }
+        if let Some(m) = caps.get(2) { duration += Duration::days(m.as_str().parse::<i64>().unwrap() * 30); }
+        if let Some(w) = caps.get(3) { duration += Duration::days(w.as_str().parse::<i64>().unwrap() * 7); }
+        if let Some(d) = caps.get(4) { duration += Duration::days(d.as_str().parse::<i64>().unwrap()); }
+        if let Some(h) = caps.get(5) { duration += Duration::hours(h.as_str().parse::<i64>().unwrap()); }
+        if let Some(min) = caps.get(6) { duration += Duration::minutes(min.as_str().parse::<i64>().unwrap()); }
         if duration != Duration::seconds(0) {
             return Some((now + duration).timestamp());
         }
