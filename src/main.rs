@@ -2,9 +2,11 @@ use clap::{Parser, Subcommand};
 use chrono::{NaiveDate, NaiveDateTime, Utc, Duration, Datelike, Local, TimeZone};
 use regex::Regex;
 use serde::{Deserialize, Serialize};
-use std::{io::{self, Write}, fs};
+use std::{io::{self, Write}, env, fs, path::Path};
 use colored::*;
 use anyhow::{Result, anyhow};
+
+const FILE_NAME: &str = "tasks.toml";
 
 #[derive(Deserialize, Serialize, Debug)]
 struct Task {
@@ -19,8 +21,9 @@ struct TaskList {
     task: Vec<Task>,
 }
 
-fn read_tasks() -> Result<TaskList> {
-    match fs::read_to_string("tasks.toml") {
+fn read_tasks(path: &Path) -> Result<TaskList> {
+    let file_path = path.join(FILE_NAME);
+    match fs::read_to_string(&file_path) {
         Ok(toml_str) => {
             let task_list: TaskList = toml::from_str(&toml_str)?;
             Ok(task_list)
@@ -29,7 +32,7 @@ fn read_tasks() -> Result<TaskList> {
             // File doesn't exist – create an empty TaskList and write it
             let task_list = TaskList { task: Vec::new() };
             let toml_str = toml::to_string_pretty(&task_list)?;
-            fs::write("tasks.toml", toml_str)?;
+            fs::write(file_path, toml_str)?;
             Ok(task_list)
         }
         Err(e) => Err(e.into()),
@@ -45,7 +48,7 @@ fn get_confirmation(task_name: &str) -> Result<bool> {
         .read_line(&mut input)
         .expect("error: failed to read line");
     
-    Ok(input.to_lowercase().contains('y'))
+    Ok(input.to_lowercase().contains("y"))
 }
 
 fn get_task_by_id(task_vec: &mut TaskList, id: u16) -> Result<&mut Task> {
@@ -305,8 +308,16 @@ enum Commands {
 }
 
 fn run() -> Result<()> {
+    let base_dir = env::var("XDG_DATA_HOME")
+        .unwrap_or_else(|_| format!("{}/.local/share", env::var("HOME").unwrap()));
+    let path = Path::new(&base_dir).join("task/");
+    
+    if !path.exists() {
+        fs::create_dir_all(&path)?;
+    }
+
     let cli = Cli::parse();
-    let mut task_vec = read_tasks()?;
+    let mut task_vec = read_tasks(&path)?;
 
     match cli.command {
         Commands::List => {
@@ -330,7 +341,7 @@ fn run() -> Result<()> {
     }
 
     let toml_str = toml::to_string_pretty(&task_vec)?;
-    fs::write("tasks.toml", toml_str)?;
+    fs::write(path.join("tasks.toml"), toml_str)?;
 
     Ok(())
 }
