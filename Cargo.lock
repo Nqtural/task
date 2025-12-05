@@ -88,11 +88,8 @@ version = "0.1.2"
 dependencies = [
  "anyhow",
  "clap",
- "colored",
  "controller",
  "model",
- "regex",
- "serde",
  "toml",
  "view",
 ]
