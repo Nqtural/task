@@ -1,0 +1,9 @@
+[package]
+name = "controller"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+anyhow = "1.0.99"
+model = { path = "../model" }
+view = { path = "../view" }

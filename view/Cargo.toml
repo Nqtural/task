@@ -1,0 +1,10 @@
+[package]
+name = "view"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+anyhow = "1.0.99"
+chrono = "0.4.42"
+colored = "3.0.0"
+model = { path = "../model" }
