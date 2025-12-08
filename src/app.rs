@@ -33,8 +33,8 @@ pub mod actions {
     use crate::io::TaskIO;
 
     pub fn add_task(tasks: &mut TaskList, name: &str, expiration: Option<&str>) -> Result<()> {
-        tasks.task.push(Task {
-            id: tasks.task.len() as u16 + 1,
+        tasks.tasks.push(Task {
+            id: tasks.tasks.len() as u16 + 1,
             name: name.to_string(),
             finished: false,
             expiration: expiration.and_then(parse_to_unix),
@@ -43,18 +43,18 @@ pub mod actions {
     }
 
     pub fn delete_task(tasks: &mut TaskList, id: u16, no_confirm: bool, io: &mut impl TaskIO) -> Result<()> {
-        let task = tasks.task.iter().find(|t| t.id == id)
+        let task = tasks.tasks.iter().find(|t| t.id == id)
             .ok_or_else(|| anyhow!("Task with id {} not found", id))?;
 
         if no_confirm || io.confirm_delete(&task.name)? {
-            tasks.task.retain(|t| t.id != id);
-            for (i, t) in tasks.task.iter_mut().enumerate() { t.id = i as u16 + 1; }
+            tasks.tasks.retain(|t| t.id != id);
+            for (i, t) in tasks.tasks.iter_mut().enumerate() { t.id = i as u16 + 1; }
         }
         Ok(())
     }
 
     pub fn edit_task(tasks: &mut TaskList, id: u16, name: Option<&str>, expiration: Option<&str>) -> Result<()> {
-        let task = tasks.task.iter_mut().find(|t| t.id == id)
+        let task = tasks.tasks.iter_mut().find(|t| t.id == id)
             .ok_or_else(|| anyhow!("Task with id {} not found", id))?;
 
         if let Some(n) = name { task.name = n.to_string(); }
@@ -63,7 +63,7 @@ pub mod actions {
     }
 
     pub fn finish_task(tasks: &mut TaskList, id: u16) -> Result<()> {
-        let task = tasks.task.iter_mut().find(|t| t.id == id)
+        let task = tasks.tasks.iter_mut().find(|t| t.id == id)
             .ok_or_else(|| anyhow!("Task with id {} not found", id))?;
         task.finished = !task.finished;
         Ok(())

@@ -16,15 +16,15 @@ impl CliIO {
 
 impl TaskIO for CliIO {
     fn print_tasks(&mut self, tasks: &TaskList) -> Result<()> {
-        if tasks.task.is_empty() {
+        if tasks.tasks.is_empty() {
             println!("No tasks yet. Create one with `task add \"My task\"`");
             return Ok(());
         }
 
-        let id_width = tasks.task.iter().map(|t| t.id.to_string().len()).max().unwrap_or(1);
-        let name_width = tasks.task.iter().map(|t| t.name.len()).max().unwrap_or(10);
+        let id_width = tasks.tasks.iter().map(|t| t.id.to_string().len()).max().unwrap_or(1);
+        let name_width = tasks.tasks.iter().map(|t| t.name.len()).max().unwrap_or(10);
 
-        for task in &tasks.task {
+        for task in &tasks.tasks {
             let last_column = if task.finished {
                 "DONE".green()
             } else if let Some(exp) = task.expiration {

@@ -10,5 +10,5 @@ pub struct Task {
 
 #[derive(Deserialize, Serialize, Debug)]
 pub struct TaskList {
-    pub task: Vec<Task>,
+    pub tasks: Vec<Task>,
 }

@@ -24,7 +24,7 @@ impl Storage for TomlStorage {
         match fs::read_to_string(&file_path) {
             Ok(s) => Ok(toml::from_str(&s)?),
             Err(e) if e.kind() == std::io::ErrorKind::NotFound => {
-                let tasks = TaskList { task: vec![] };
+                let tasks = TaskList { tasks: vec![] };
                 self.save(&tasks)?;
                 Ok(tasks)
             }
