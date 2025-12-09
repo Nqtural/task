@@ -10,25 +10,31 @@ pub struct Cli {
 
 #[derive(Subcommand)]
 pub enum Commands {
-    List,
+    List {
+        project: Option<String>,
+    },
     Add {
         name: String,
         #[arg(short, long)]
         time: Option<String>,
+        project: Option<String>,
     },
     Delete {
-        id: u16,
+        id: u32,
         #[arg(long, action = clap::ArgAction::SetTrue)]
         no_confirm: bool,
+        project: Option<String>,
     },
     Edit {
-        id: u16,
+        id: u32,
         #[arg(short, long)]
         name: Option<String>,
         #[arg(short, long)]
         time: Option<String>,
+        project: Option<String>,
     },
     Finish {
-        id: u16,
+        id: u32,
+        project: Option<String>,
     },
 }

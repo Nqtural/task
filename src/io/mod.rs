@@ -1,9 +1,9 @@
-use crate::model::TaskList;
+use crate::model::Task;
 use anyhow::Result;
 
 pub mod cli_io;
 
 pub trait TaskIO {
-    fn print_tasks(&mut self, tasks: &TaskList) -> Result<()>;
+    fn print_tasks(&mut self, tasks: &[Task]) -> Result<()>;
     fn confirm_delete(&mut self, task_name: &str) -> Result<bool>;
 }

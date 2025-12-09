@@ -1,14 +1,26 @@
-use serde::{Deserialize, Serialize};
+use serde::{Serialize, Deserialize};
+use std::collections::HashMap;
 
-#[derive(Deserialize, Serialize, Debug)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct Task {
-    pub id: u16,
+    pub id: u32,
     pub name: String,
     pub finished: bool,
     pub expiration: Option<i64>,
 }
 
-#[derive(Deserialize, Serialize, Debug)]
-pub struct TaskList {
+#[derive(Debug, Serialize, Deserialize)]
+pub struct Project {
     pub tasks: Vec<Task>,
+}
+
+#[derive(Debug, Default, Serialize, Deserialize)]
+pub struct Global {
+    pub tasks: Vec<Task>,
+}
+
+#[derive(Debug, Default, Serialize, Deserialize)]
+pub struct Root {
+    pub global: Global,
+    pub projects: HashMap<String, Project>,
 }

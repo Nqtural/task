@@ -1,9 +1,13 @@
-use crate::model::TaskList;
+use crate::model::Task;
 use anyhow::Result;
 
 pub mod toml_storage;
 
 pub trait Storage {
-    fn load(&mut self) -> Result<TaskList>;
-    fn save(&mut self, tasks: &TaskList) -> Result<()>;
+    fn find_project_name(&self) -> Result<Option<String>>;
+    fn find_project_by_name(&mut self, project_name: &str) -> Option<&mut Vec<Task>>;
+    fn get_global_project(&mut self) -> &mut Vec<Task>;
+    fn get_current_project(&mut self) -> Result<Option<&mut Vec<Task>>>;
+    fn get_project_from_input(&mut self, project_name: &str) -> Option<&mut Vec<Task>>;
+    fn save(&self) -> Result<()>;
 }
