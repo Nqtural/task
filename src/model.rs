@@ -9,7 +9,7 @@ pub struct Task {
     pub expiration: Option<i64>,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Default, Serialize, Deserialize)]
 pub struct Project {
     pub tasks: Vec<Task>,
 }

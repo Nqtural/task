@@ -1,5 +1,5 @@
 use super::Storage;
-use crate::model::{Root, Task};
+use crate::model::{Root, Task, Project};
 use anyhow::Result;
 use std::fs;
 use std::path::PathBuf;
@@ -45,6 +45,10 @@ impl Storage for TomlStorage {
         }
     }
 
+    fn project_exists(&self, name: &str) -> bool {
+        self.root.projects.contains_key(name)
+    }
+
     fn find_project_by_name(&mut self, project_name: &str) -> Option<&mut Vec<Task>> {
         self.root
             .projects
@@ -72,6 +76,12 @@ impl Storage for TomlStorage {
         } else {
             self.find_project_by_name(project_name)
         }
+
+    }
+
+    fn create_and_get_project(&mut self, name: &str) -> &mut Vec<Task> {
+        self.root.projects.insert(name.to_string(), Project::default());
+        self.root.projects.get_mut(name).unwrap().tasks.as_mut()
 
     }
 
