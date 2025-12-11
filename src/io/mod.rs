@@ -4,6 +4,8 @@ use anyhow::Result;
 pub mod cli_io;
 
 pub trait TaskIO {
-    fn print_tasks(&mut self, tasks: &[Task]) -> Result<()>;
-    fn confirm_delete(&mut self, task_name: &str) -> Result<bool>;
+    fn new_project(&self);
+    fn list_projects(&self, project_infos: Vec<(String, usize)>);
+    fn print_tasks(&self, tasks: &[Task]) -> Result<()>;
+    fn confirm_delete(&self, task_name: &str) -> Result<bool>;
 }

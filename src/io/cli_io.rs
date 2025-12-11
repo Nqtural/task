@@ -15,7 +15,25 @@ impl CliIO {
 }
 
 impl TaskIO for CliIO {
-    fn print_tasks(&mut self, tasks: &[Task]) -> Result<()> {
+    fn new_project(&self) {
+        println!("Created new project");
+    }
+
+    fn list_projects(&self, project_infos: Vec<(String, usize)>) {
+        let project_name_width = project_infos.iter().map(|p| p.0.len()).max().unwrap_or(1);
+
+        println!("Projects:\n---------");
+        for project_info in &project_infos {
+            println!(
+                "{: <project_name_width$} ({} task{})",
+                project_info.0,
+                project_info.1,
+                if project_info.1 == 1 { "" } else { "s" }
+            );
+        }
+    }
+
+    fn print_tasks(&self, tasks: &[Task]) -> Result<()> {
         if tasks.is_empty() {
             println!("No tasks yet. Create one with `task add \"My task\"`");
             return Ok(());
@@ -45,7 +63,7 @@ impl TaskIO for CliIO {
         Ok(())
     }
 
-    fn confirm_delete(&mut self, task_name: &str) -> Result<bool> {
+    fn confirm_delete(&self, task_name: &str) -> Result<bool> {
         print!("Are you sure you want to delete task '{}'? [y/N]: ", task_name);
         io::stdout().flush()?;
 

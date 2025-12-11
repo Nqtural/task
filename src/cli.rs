@@ -9,7 +9,20 @@ pub struct Cli {
 }
 
 #[derive(Subcommand)]
+pub enum ProjectCommands {
+    New,
+    List,
+    Delete {
+        project: Option<String>,
+    },
+}
+
+#[derive(Subcommand)]
 pub enum Commands {
+    Project {
+        #[command(subcommand)]
+        command: ProjectCommands,
+    },
     List {
         project: Option<String>,
     },
@@ -17,6 +30,7 @@ pub enum Commands {
         name: String,
         #[arg(short, long)]
         time: Option<String>,
+        #[arg(short, long)]
         project: Option<String>,
     },
     Delete {

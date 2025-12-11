@@ -1,8 +1,9 @@
 use super::Storage;
 use crate::model::{Root, Task, Project};
-use anyhow::Result;
+use anyhow::{anyhow, Result};
 use std::fs;
 use std::path::PathBuf;
+use dirs::home_dir;
 
 pub struct TomlStorage {
     path: PathBuf,
@@ -29,15 +30,45 @@ impl TomlStorage {
 }
 
 impl Storage for TomlStorage {
-    fn find_project_name(&self) -> Result<Option<String>> {
-        let mut cwd = std::env::current_dir()?;
-        loop {
-            if let Some(name_os) = cwd.file_name() {
-                let name = name_os.to_string_lossy().to_string();
-                if self.root.projects.contains_key(&name) {
-                    return Ok(Some(name));
-                }
+    fn tidy_path(&self, path: &str) -> String {
+        if let Some(home) = home_dir()
+        && let Some(home_str) = home.to_str() {
+            return path.replacen(home_str, "~", 1);
+        }
+
+        path.to_string()
+    }
+
+    fn new_project(&mut self) -> Result<()> {
+        let cwd = std::env::current_dir()?;
+        self.root.projects.insert(
+            cwd.to_str().unwrap().to_string(),
+            Project::default()
+        );
+
+        Ok(())
+    }
+
+    fn delete_project(&mut self, project_name: Option<String>) -> Result<()> {
+        match project_name {
+            Some(name) => self.root.projects.retain(|k, _| !k.ends_with(&name)),
+            None => if let Some(key) = self.current_project_key()? {
+                self.root.projects.remove(&key);
             }
+        }
+
+        Ok(())
+    }
+
+    fn current_project_key(&self) -> Result<Option<String>> {
+        let mut cwd = std::env::current_dir()?.canonicalize()?;
+
+        loop {
+            let key = cwd.to_string_lossy().to_string();
+            if self.root.projects.contains_key(&key) {
+                return Ok(Some(key));
+            }
+
             cwd = match cwd.parent() {
                 Some(parent) => parent.to_path_buf(),
                 None => return Ok(None),
@@ -45,15 +76,58 @@ impl Storage for TomlStorage {
         }
     }
 
+    fn get_project(
+        &mut self,
+        project_name: Option<String>,
+        create_if_missing: bool
+    ) -> Result<&mut Vec<Task>> {
+        match project_name {
+            Some(name) => {
+                if self.project_exists(&name) {
+                    return Ok(self.get_project_from_input(&name).unwrap());
+                }
+
+                if create_if_missing {
+                    return Ok(self.create_and_get_project(&name));
+                }
+
+                Err(anyhow!("Project `{}` not found", name))
+            }
+
+            None => {
+                if let Some(project) = self.get_current_project()? {
+                    return Ok(project);
+                }
+
+                Err(anyhow!("Not in a project directory"))
+            }
+        }
+    }
+
+    fn get_projects(&self) -> Vec<(String, usize)> {
+        let mut project_info: Vec<(String, usize)> = vec![
+            (String::from("Global"), self.root.global.tasks.len())
+        ];
+        project_info.extend(self
+            .root
+            .projects
+            .iter()
+            .map(|(k, p)| (self.tidy_path(k.as_str()), p.tasks.len()))
+        );
+
+        project_info
+    }
+
     fn project_exists(&self, name: &str) -> bool {
-        self.root.projects.contains_key(name)
+        self.root.projects
+            .keys()
+            .any(|k| k.ends_with(name))
     }
 
     fn find_project_by_name(&mut self, project_name: &str) -> Option<&mut Vec<Task>> {
-        self.root
-            .projects
-            .get_mut(project_name)
-            .map(|project| &mut project.tasks)
+        self.root.projects.iter_mut()
+            .find(|(path, _)| path.ends_with(project_name))
+            .map(|(_, project)| &mut project.tasks)
     }
 
     fn get_global_project(&mut self) -> &mut Vec<Task> {
@@ -61,13 +135,11 @@ impl Storage for TomlStorage {
     }
 
     fn get_current_project(&mut self) -> Result<Option<&mut Vec<Task>>> {
-        let name = self.find_project_name()?;
-
-        if let Some(name) = name {
-            Ok(self.find_project_by_name(&name))
-        } else {
-            Ok(Some(self.get_global_project()))
+        if let Some(k) = self.current_project_key()? {
+            return Ok(self.root.projects.get_mut(&k).map(|p| &mut p.tasks));
         }
+
+        Ok(None)
     }
 
     fn get_project_from_input(&mut self, project_name: &str) -> Option<&mut Vec<Task>> {

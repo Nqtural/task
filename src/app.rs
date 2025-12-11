@@ -1,53 +1,42 @@
 use crate::storage::Storage;
 use crate::io::TaskIO;
-use crate::model::Task;
-use crate::cli::Cli;
-use anyhow::{anyhow, Result};
-
-fn get_tasks(
-    storage: &mut impl Storage,
-    project: Option<String>,
-    create_if_missing: bool,
-) -> Result<&mut Vec<Task>> {
-    match project {
-        Some(name) => {
-            if storage.project_exists(&name) {
-                return Ok(storage.get_project_from_input(&name).unwrap());
-            }
-
-            if create_if_missing {
-                return Ok(storage.create_and_get_project(&name));
-            }
-
-            Err(anyhow!("Project `{}` not found", name))
-        }
-
-        None => {
-            if let Some(proj) = storage.get_current_project()? {
-                return Ok(proj);
-            }
-
-            Err(anyhow!("No current project set"))
-        }
-    }
-}
+use crate::cli::{Cli, ProjectCommands};
+use anyhow::Result;
 
 pub fn run(storage: &mut impl Storage, io: &mut impl TaskIO, cli: Cli) -> Result<()> {
     match cli.command {
+        crate::cli::Commands::Project { command } => {
+            match command {
+                ProjectCommands::New => {
+                    storage.new_project()?;
+                    io.new_project();
+                },
+                ProjectCommands::List => {
+                    io.list_projects(storage.get_projects());
+                },
+                ProjectCommands::Delete { project } => {
+                    storage.get_project(project.clone(), false)?;
+
+                    if io.confirm_delete("project")? {
+                        storage.delete_project(project)?;
+                    }
+                }
+            }
+        },
         crate::cli::Commands::List { project } => {
-            io.print_tasks(get_tasks(storage, project, false)?)?
+            io.print_tasks(storage.get_project(project, false)?)?
         },
         crate::cli::Commands::Add { name, time, project } => {
-            crate::app::actions::add_task(get_tasks(storage, project, true)?, &name, time.as_deref())?;
+            crate::app::actions::add_task(storage.get_project(project, true)?, &name, time.as_deref())?;
         }
         crate::cli::Commands::Delete { id, no_confirm, project } => {
-            crate::app::actions::delete_task(get_tasks(storage, project, false)?, id, no_confirm, io)?;
+            crate::app::actions::delete_task(storage.get_project(project, false)?, id, no_confirm, io)?;
         }
         crate::cli::Commands::Edit { id, name, time, project } => {
-            crate::app::actions::edit_task(get_tasks(storage, project, false)?, id, name.as_deref(), time.as_deref())?;
+            crate::app::actions::edit_task(storage.get_project(project, false)?, id, name.as_deref(), time.as_deref())?;
         }
         crate::cli::Commands::Finish { id, project } => {
-            crate::app::actions::finish_task(get_tasks(storage, project, false)?, id)?;
+            crate::app::actions::finish_task(storage.get_project(project, false)?, id)?;
         }
     }
 
