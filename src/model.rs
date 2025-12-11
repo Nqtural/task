@@ -11,6 +11,7 @@ pub struct Task {
 
 #[derive(Debug, Default, Serialize, Deserialize)]
 pub struct Project {
+    pub name: String,
     pub tasks: Vec<Task>,
 }
 

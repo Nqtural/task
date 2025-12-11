@@ -15,9 +15,9 @@ pub fn run(storage: &mut impl Storage, io: &mut impl TaskIO, cli: Cli) -> Result
                     io.list_projects(storage.get_projects());
                 },
                 ProjectCommands::Delete { project } => {
-                    storage.get_project(project.clone(), false)?;
+                    let project_object = storage.get_project(project.clone(), false)?;
 
-                    if io.confirm_delete("project")? {
+                    if io.confirm_delete_project(project_object)? {
                         storage.delete_project(project)?;
                     }
                 }
@@ -65,7 +65,7 @@ pub mod actions {
         let task = project.tasks.iter().find(|t| t.id == id)
             .ok_or_else(|| anyhow!("Task with id {} not found", id))?;
 
-        if no_confirm || io.confirm_delete(&task.name)? {
+        if no_confirm || io.confirm_delete_task(task)? {
             project.tasks.retain(|t| t.id != id);
             for (i, t) in project.tasks.iter_mut().enumerate() { t.id = i as u32 + 1; }
         }

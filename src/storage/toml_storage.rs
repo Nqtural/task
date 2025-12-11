@@ -41,9 +41,14 @@ impl Storage for TomlStorage {
 
     fn new_project(&mut self) -> Result<()> {
         let cwd = std::env::current_dir()?;
+
+        let cwd_string = cwd.to_str().unwrap().to_string();
         self.root.projects.insert(
-            cwd.to_str().unwrap().to_string(),
-            Project::default()
+            cwd_string.clone(),
+            Project {
+                name: cwd_string,
+                ..Project::default()
+            }
         );
 
         Ok(())

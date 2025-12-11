@@ -1,5 +1,5 @@
 use crate::io::TaskIO;
-use crate::model::Project;
+use crate::model::{Project, Task};
 use anyhow::Result;
 use colored::*;
 use chrono::Utc;
@@ -63,8 +63,22 @@ impl TaskIO for CliIO {
         Ok(())
     }
 
-    fn confirm_delete(&self, task_name: &str) -> Result<bool> {
-        print!("Are you sure you want to delete task '{}'? [y/N]: ", task_name);
+    fn confirm_delete_project(&self, project: &Project) -> Result<bool> {
+        print!(
+            "Are you sure you want to delete project '{}'? (contains {} task{}) (y/N): ",
+            project.name,
+            project.tasks.len(),
+            if project.tasks.len() == 1 { "" } else { "s"},
+        );
+        io::stdout().flush()?;
+
+        let mut input = String::new();
+        io::stdin().read_line(&mut input)?;
+        Ok(input.to_lowercase().contains('y'))
+    }
+
+    fn confirm_delete_task(&self, task: &Task) -> Result<bool> {
+        print!("Are you sure you want to delete task '{}'? (y/N): ", task.name);
         io::stdout().flush()?;
 
         let mut input = String::new();
