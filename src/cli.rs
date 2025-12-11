@@ -30,7 +30,6 @@ pub enum Commands {
         name: String,
         #[arg(short, long)]
         time: Option<String>,
-        #[arg(short, long)]
         project: Option<String>,
     },
     Delete {
