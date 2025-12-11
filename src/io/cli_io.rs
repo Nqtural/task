@@ -42,6 +42,8 @@ impl TaskIO for CliIO {
         let id_width = project.tasks.iter().map(|t| t.id.to_string().len()).max().unwrap_or(1);
         let name_width = project.tasks.iter().map(|t| t.name.len()).max().unwrap_or(10);
 
+        println!("Listing tasks in project '{}'", project.name);
+
         for (index, task) in project.tasks.iter().enumerate() {
             let last_column = if task.finished {
                 "DONE".green()
