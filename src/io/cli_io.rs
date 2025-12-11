@@ -56,7 +56,11 @@ impl TaskIO for CliIO {
             };
 
             print!("{: >id_width$}. ", index + 1, id_width = id_width + 1);
-            print!("{: <name_width$} ", task.name.cyan().bold(), name_width = name_width);
+            print!(
+                "{: <name_width$} ",
+                if task.finished { task.name.white() } else {task.name.cyan().bold() },
+                name_width = name_width
+            );
             println!("{: >15}", last_column);
         }
 
