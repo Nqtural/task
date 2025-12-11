@@ -42,7 +42,7 @@ impl TaskIO for CliIO {
         let id_width = tasks.iter().map(|t| t.id.to_string().len()).max().unwrap_or(1);
         let name_width = tasks.iter().map(|t| t.name.len()).max().unwrap_or(10);
 
-        for task in tasks {
+        for (index, task) in tasks.iter().enumerate() {
             let last_column = if task.finished {
                 "DONE".green()
             } else if let Some(exp) = task.expiration {
@@ -55,7 +55,7 @@ impl TaskIO for CliIO {
                 "".white()
             };
 
-            print!("{: >id_width$}. ", task.id, id_width = id_width + 1);
+            print!("{: >id_width$}. ", index + 1, id_width = id_width + 1);
             print!("{: <name_width$} ", task.name.cyan().bold(), name_width = name_width);
             println!("{: >15}", last_column);
         }
