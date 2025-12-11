@@ -83,6 +83,10 @@ impl Storage for TomlStorage {
     ) -> Result<&mut Project> {
         match project_name {
             Some(name) => {
+                if name.eq_ignore_ascii_case("global") {
+                    return Ok(self.get_global_project());
+                }
+
                 if self.project_exists(&name) {
                     return Ok(self.get_project_from_input(&name).unwrap());
                 }
