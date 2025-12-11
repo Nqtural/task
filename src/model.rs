@@ -15,12 +15,7 @@ pub struct Project {
 }
 
 #[derive(Debug, Default, Serialize, Deserialize)]
-pub struct Global {
-    pub tasks: Vec<Task>,
-}
-
-#[derive(Debug, Default, Serialize, Deserialize)]
 pub struct Root {
-    pub global: Global,
+    pub global: Project,
     pub projects: HashMap<String, Project>,
 }

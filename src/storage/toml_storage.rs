@@ -1,5 +1,5 @@
 use super::Storage;
-use crate::model::{Root, Task, Project};
+use crate::model::{Root, Project};
 use anyhow::{anyhow, Result};
 use std::fs;
 use std::path::PathBuf;
@@ -80,7 +80,7 @@ impl Storage for TomlStorage {
         &mut self,
         project_name: Option<String>,
         create_if_missing: bool
-    ) -> Result<&mut Vec<Task>> {
+    ) -> Result<&mut Project> {
         match project_name {
             Some(name) => {
                 if self.project_exists(&name) {
@@ -124,36 +124,35 @@ impl Storage for TomlStorage {
             .any(|k| k.ends_with(name))
     }
 
-    fn find_project_by_name(&mut self, project_name: &str) -> Option<&mut Vec<Task>> {
+    fn find_project_by_name(&mut self, project_name: &str) -> Option<&mut Project> {
         self.root.projects.iter_mut()
             .find(|(path, _)| path.ends_with(project_name))
-            .map(|(_, project)| &mut project.tasks)
+            .map(|(_, project)| project)
     }
 
-    fn get_global_project(&mut self) -> &mut Vec<Task> {
-        &mut self.root.global.tasks
+    fn get_global_project(&mut self) -> &mut Project {
+        &mut self.root.global
     }
 
-    fn get_current_project(&mut self) -> Result<Option<&mut Vec<Task>>> {
+    fn get_current_project(&mut self) -> Result<Option<&mut Project>> {
         if let Some(k) = self.current_project_key()? {
-            return Ok(self.root.projects.get_mut(&k).map(|p| &mut p.tasks));
+            return Ok(self.root.projects.get_mut(&k));
         }
 
         Ok(None)
     }
 
-    fn get_project_from_input(&mut self, project_name: &str) -> Option<&mut Vec<Task>> {
+    fn get_project_from_input(&mut self, project_name: &str) -> Option<&mut Project> {
         if project_name.eq_ignore_ascii_case("global") {
             Some(self.get_global_project())
         } else {
             self.find_project_by_name(project_name)
         }
-
     }
 
-    fn create_and_get_project(&mut self, name: &str) -> &mut Vec<Task> {
+    fn create_and_get_project(&mut self, name: &str) -> &mut Project {
         self.root.projects.insert(name.to_string(), Project::default());
-        self.root.projects.get_mut(name).unwrap().tasks.as_mut()
+        self.root.projects.get_mut(name).unwrap()
 
     }
 

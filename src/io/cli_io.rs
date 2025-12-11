@@ -1,5 +1,5 @@
 use crate::io::TaskIO;
-use crate::model::Task;
+use crate::model::Project;
 use anyhow::Result;
 use colored::*;
 use chrono::Utc;
@@ -33,16 +33,16 @@ impl TaskIO for CliIO {
         }
     }
 
-    fn print_tasks(&self, tasks: &[Task]) -> Result<()> {
-        if tasks.is_empty() {
+    fn print_tasks(&self, project: &Project) -> Result<()> {
+        if project.tasks.is_empty() {
             println!("No tasks yet. Create one with `task add \"My task\"`");
             return Ok(());
         }
 
-        let id_width = tasks.iter().map(|t| t.id.to_string().len()).max().unwrap_or(1);
-        let name_width = tasks.iter().map(|t| t.name.len()).max().unwrap_or(10);
+        let id_width = project.tasks.iter().map(|t| t.id.to_string().len()).max().unwrap_or(1);
+        let name_width = project.tasks.iter().map(|t| t.name.len()).max().unwrap_or(10);
 
-        for (index, task) in tasks.iter().enumerate() {
+        for (index, task) in project.tasks.iter().enumerate() {
             let last_column = if task.finished {
                 "DONE".green()
             } else if let Some(exp) = task.expiration {
