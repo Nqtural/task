@@ -23,8 +23,8 @@ pub fn run(storage: &mut impl Storage, io: &mut impl TaskIO, cli: Cli) -> Result
                 }
             }
         },
-        crate::cli::Commands::List { project } => {
-            io.print_tasks(storage.get_project(project, false)?)?
+        crate::cli::Commands::List { project, hide_finished } => {
+            io.print_tasks(storage.get_project(project, false)?, hide_finished)?
         },
         crate::cli::Commands::Add { name, time, project } => {
             crate::app::actions::add_task(storage.get_project(project, true)?, &name, time.as_deref())?;

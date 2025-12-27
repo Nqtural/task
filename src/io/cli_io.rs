@@ -33,7 +33,7 @@ impl TaskIO for CliIO {
         }
     }
 
-    fn print_tasks(&self, project: &Project) -> Result<()> {
+    fn print_tasks(&self, project: &Project, hide_finished: bool) -> Result<()> {
         if project.tasks.is_empty() {
             println!("No tasks yet. Create one with `task add \"My task\"`");
             return Ok(());
@@ -46,6 +46,7 @@ impl TaskIO for CliIO {
 
         for (index, task) in project.tasks.iter().enumerate() {
             let last_column = if task.finished {
+                if hide_finished { continue; }
                 "DONE".green()
             } else if let Some(exp) = task.expiration {
                 if exp - Utc::now().timestamp() <= 0 {

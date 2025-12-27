@@ -25,6 +25,8 @@ pub enum Commands {
     },
     List {
         project: Option<String>,
+        #[arg(long, action = clap::ArgAction::SetTrue)]
+        hide_finished: bool,
     },
     Add {
         name: String,
