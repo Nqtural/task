@@ -35,13 +35,13 @@ pub enum Commands {
         project: Option<String>,
     },
     Delete {
-        id: u32,
+        number: usize,
         #[arg(long, action = clap::ArgAction::SetTrue)]
         no_confirm: bool,
         project: Option<String>,
     },
     Edit {
-        id: u32,
+        number: usize,
         #[arg(short, long)]
         name: Option<String>,
         #[arg(short, long)]
@@ -49,7 +49,7 @@ pub enum Commands {
         project: Option<String>,
     },
     Finish {
-        id: u32,
+        number: usize,
         project: Option<String>,
     },
 }
