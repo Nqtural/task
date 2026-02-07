@@ -38,32 +38,63 @@ impl TaskIO {
             return Ok(());
         }
 
-        let id_width = project.tasks.iter().map(|t| t.id.to_string().len()).max().unwrap_or(1);
-        let name_width = project.tasks.iter().map(|t| t.name.len()).max().unwrap_or(10);
+        let id_width = project.tasks.iter().map(|t| t.id.to_string().len()).max().unwrap_or(0);
+        let name_width = project.tasks.iter().map(|t| t.name.len()).max().unwrap_or(0);
+        let last_width = project
+            .tasks
+            .iter()
+            .map(|t| {
+                if t.finished {
+                    4 // evaluates to "DONE" later
+                } else if let Some(exp) = t.expiration {
+                    unix_to_relative(exp).len()
+                } else {
+                    0
+                }
+            })
+        .max()
+        .unwrap_or(0);
 
         println!("Listing tasks in project '{}'", project.path);
 
         for (index, task) in project.tasks.iter().enumerate() {
-            let last_column = if task.finished {
-                if hide_finished { continue; }
-                "DONE".green()
+            if task.finished && hide_finished {
+                continue;
+            }
+
+            let styled_name = if task.finished {
+                task.name.bright_black().strikethrough()
+            } else {
+                task.name.white().bold()
+            };
+
+            let raw_last = if task.finished {
+                "DONE".to_string()
+            } else if let Some(exp) = task.expiration {
+                unix_to_relative(exp)
+            } else {
+                "".to_string()
+            };
+
+            let styled_last = if task.finished {
+                raw_last.green()
             } else if let Some(exp) = task.expiration {
                 if exp - Utc::now().timestamp() <= 0 {
-                    unix_to_relative(exp).red()
+                    raw_last.red()
                 } else {
-                    unix_to_relative(exp).bright_black()
+                    raw_last.bright_black()
                 }
             } else {
-                "".white()
+                raw_last.white()
             };
 
             print!("{: >id_width$}. ", index + 1, id_width = id_width + 1);
-            print!(
-                "{: <name_width$} ",
-                if task.finished { task.name.white() } else {task.name.cyan().bold() },
-                name_width = name_width
-            );
-            println!("{: >15}", last_column);
+            print!("{}", styled_name);
+            let name_pad = name_width.saturating_sub(task.name.len());
+            print!("{:name_pad$} ", "", name_pad = name_pad);
+            let last_pad = last_width.saturating_sub(raw_last.len());
+            print!("{:last_pad$}", "", last_pad = last_pad);
+            println!("{}", styled_last);
         }
 
         Ok(())
