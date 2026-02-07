@@ -1,39 +1,38 @@
-use crate::io::TaskIO;
-use crate::model::{Project, Task};
+use crate::types::{Project, Task};
 use anyhow::Result;
 use colored::*;
 use chrono::Utc;
 use crate::utils::unix_to_relative;
 use std::io::{self, Write};
 
-pub struct CliIO;
+pub struct TaskIO;
 
-impl CliIO {
+impl TaskIO {
     pub fn new() -> Self {
         Self
     }
 }
 
-impl TaskIO for CliIO {
-    fn new_project(&self) {
+impl TaskIO {
+    pub fn new_project(&self) {
         println!("Created new project");
     }
 
-    fn list_projects(&self, project_infos: Vec<(String, usize)>) {
-        let project_name_width = project_infos.iter().map(|p| p.0.len()).max().unwrap_or(1);
+    pub fn list_projects(&self, projects: &[Project]) {
+        let project_path_width = projects.iter().map(|p| p.path.len()).max().unwrap_or(1);
 
         println!("Projects:\n---------");
-        for project_info in &project_infos {
+        for project in projects {
             println!(
-                "{: <project_name_width$} ({} task{})",
-                project_info.0,
-                project_info.1,
-                if project_info.1 == 1 { "" } else { "s" }
+                "{: <project_path_width$} ({} task{})",
+                project.path,
+                project.tasks.len(),
+                if project.tasks.len() == 1 { "" } else { "s" }
             );
         }
     }
 
-    fn print_tasks(&self, project: &Project, hide_finished: bool) -> Result<()> {
+    pub fn print_tasks(&self, project: &Project, hide_finished: bool) -> Result<()> {
         if project.tasks.is_empty() {
             println!("No tasks yet. Create one with `task add \"My task\"`");
             return Ok(());
@@ -42,7 +41,7 @@ impl TaskIO for CliIO {
         let id_width = project.tasks.iter().map(|t| t.id.to_string().len()).max().unwrap_or(1);
         let name_width = project.tasks.iter().map(|t| t.name.len()).max().unwrap_or(10);
 
-        println!("Listing tasks in project '{}'", project.name);
+        println!("Listing tasks in project '{}'", project.path);
 
         for (index, task) in project.tasks.iter().enumerate() {
             let last_column = if task.finished {
@@ -70,10 +69,10 @@ impl TaskIO for CliIO {
         Ok(())
     }
 
-    fn confirm_delete_project(&self, project: &Project) -> Result<bool> {
+    pub fn confirm_delete_project(&self, project: &Project) -> Result<bool> {
         print!(
             "Are you sure you want to delete project '{}'? (contains {} task{}) (y/N): ",
-            project.name,
+            project.path,
             project.tasks.len(),
             if project.tasks.len() == 1 { "" } else { "s"},
         );
@@ -84,12 +83,20 @@ impl TaskIO for CliIO {
         Ok(input.to_lowercase().contains('y'))
     }
 
-    fn confirm_delete_task(&self, task: &Task) -> Result<bool> {
+    pub fn confirm_delete_task(&self, task: &Task) -> Result<bool> {
         print!("Are you sure you want to delete task '{}'? (y/N): ", task.name);
         io::stdout().flush()?;
 
         let mut input = String::new();
         io::stdin().read_line(&mut input)?;
         Ok(input.to_lowercase().contains('y'))
+    }
+
+    pub fn project_not_found(&self) {
+        println!("Project not found");
+    }
+
+    pub fn task_not_found(&self) {
+        println!("Task not found");
     }
 }

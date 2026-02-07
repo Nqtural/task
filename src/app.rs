@@ -1,93 +1,117 @@
-use crate::storage::Storage;
-use crate::io::TaskIO;
-use crate::cli::{Cli, ProjectCommands};
 use anyhow::Result;
 
-pub fn run(storage: &mut impl Storage, io: &mut impl TaskIO, cli: Cli) -> Result<()> {
+use crate::cli::{Cli, Commands, ProjectCommands};
+use crate::io::TaskIO;
+use crate::storage::TaskStorage;
+use crate::utils::parse_to_unix;
+
+fn get_project_id_from_input_or_current(storage: &TaskStorage, input: Option<String>) -> Result<Option<u32>> {
+    Ok(match input {
+        Some(input) => storage.find_project_by_dir_name(&input)?,
+        None => storage.get_current_project()?,
+    })
+}
+
+pub fn run(storage: &TaskStorage, io: &mut TaskIO, cli: Cli) -> Result<()> {
     match cli.command {
-        crate::cli::Commands::Project { command } => {
+        Commands::Project { command } => {
             match command {
                 ProjectCommands::New => {
                     storage.new_project()?;
                     io.new_project();
                 },
                 ProjectCommands::List => {
-                    io.list_projects(storage.get_projects());
+                    io.list_projects(&storage.get_all_projects()?);
                 },
                 ProjectCommands::Delete { project } => {
-                    let project_object = storage.get_project(project.clone(), false)?;
+                    let project_id = get_project_id_from_input_or_current(storage, project)?;
 
-                    if io.confirm_delete_project(project_object)? {
-                        storage.delete_project(project)?;
+                    match project_id {
+                        Some(project_id) => {
+                            // unwrap is safe because project_id exists
+                            let project = storage.get_project(project_id)?.unwrap();
+
+                            if io.confirm_delete_project(&project)? {
+                                storage.delete_project(project_id)?;
+                            }
+                        },
+                        None => io.project_not_found(),
                     }
                 }
             }
         },
-        crate::cli::Commands::List { project, hide_finished } => {
-            io.print_tasks(storage.get_project(project, false)?, hide_finished)?
+        Commands::List { project, hide_finished } => {
+            let project_id = get_project_id_from_input_or_current(storage, project)?;
+            match project_id {
+                Some(project_id) => {
+                    // unwrap is safe because project_id exists
+                    let project = storage.get_project(project_id)?.unwrap();
+                    io.print_tasks(&project, hide_finished)?;
+                },
+                None => io.project_not_found(),
+            }
         },
-        crate::cli::Commands::Add { name, time, project } => {
-            crate::app::actions::add_task(storage.get_project(project, true)?, &name, time.as_deref())?;
-        }
-        crate::cli::Commands::Delete { id, no_confirm, project } => {
-            crate::app::actions::delete_task(storage.get_project(project, false)?, id, no_confirm, io)?;
-        }
-        crate::cli::Commands::Edit { id, name, time, project } => {
-            crate::app::actions::edit_task(storage.get_project(project, false)?, id, name.as_deref(), time.as_deref())?;
-        }
-        crate::cli::Commands::Finish { id, project } => {
-            crate::app::actions::finish_task(storage.get_project(project, false)?, id)?;
+        Commands::Add { name, time, project } => {
+            let project_id = get_project_id_from_input_or_current(storage, project)?;
+            match project_id {
+                Some(project_id) => {
+                    storage.add_task(
+                        project_id,
+                        &name,
+                        time.as_deref(),
+                    )?;
+                },
+                None => io.project_not_found(),
+            }
+        },
+        Commands::Delete { number, no_confirm, project } => {
+            let project_id = get_project_id_from_input_or_current(storage, project)?;
+            match project_id {
+                Some(project_id) => {
+                    // get number - 1 because task 0 is displayed as 1
+                    match storage.get_tasks(project_id)?.get(number - 1) {
+                        Some(task) => {
+                            if no_confirm || io.confirm_delete_task(&storage.get_task(task.id)?)? {
+                                storage.delete_task(task.id)?;
+                            }
+                        },
+                        None => io.task_not_found(),
+                    }
+                }
+                None => io.project_not_found(),
+            }
+        },
+        Commands::Edit { number, name, time, project } => {
+            let project_id = get_project_id_from_input_or_current(storage, project)?;
+            match project_id {
+                Some(project_id) => {
+                    // get number - 1 because task 0 is displayed as 1
+                    match storage.get_tasks(project_id)?.get(number - 1) {
+                        Some(task) => storage.update_task(
+                            task.id,
+                            name.as_deref(),
+                            time.as_deref().and_then(parse_to_unix),
+                        )?,
+                        None => io.task_not_found(),
+                    }
+                },
+                None => io.project_not_found(),
+            }
+        },
+        Commands::Finish { number, project } => {
+            let project_id = get_project_id_from_input_or_current(storage, project)?;
+            match project_id {
+                Some(project_id) => {
+                    // get number - 1 because task 0 is displayed as 1
+                    match storage.get_tasks(project_id)?.get(number - 1) {
+                        Some(task) => storage.toggle_finish_task(task.id)?,
+                        None => io.task_not_found(),
+                    }
+                },
+                None => io.project_not_found(),
+            }
         }
     }
 
-    storage.save()?;
     Ok(())
-}
-
-pub mod actions {
-    use crate::model::{Project, Task};
-    use crate::utils::parse_to_unix;
-    use anyhow::{Result, anyhow};
-    use crate::io::TaskIO;
-
-    pub fn add_task(project: &mut Project, name: &str, expiration: Option<&str>) -> Result<()> {
-        project.tasks.push(Task {
-            id: project.tasks.len() as u32 + 1,
-            name: name.to_string(),
-            finished: false,
-            expiration: expiration.and_then(parse_to_unix),
-        });
-
-        Ok(())
-    }
-
-    pub fn delete_task(project: &mut Project, id: u32, no_confirm: bool, io: &mut impl TaskIO) -> Result<()> {
-        let task = project.tasks.iter().find(|t| t.id == id)
-            .ok_or_else(|| anyhow!("Task with id {} not found", id))?;
-
-        if no_confirm || io.confirm_delete_task(task)? {
-            project.tasks.retain(|t| t.id != id);
-            for (i, t) in project.tasks.iter_mut().enumerate() { t.id = i as u32 + 1; }
-        }
-
-        Ok(())
-    }
-
-    pub fn edit_task(project: &mut Project, id: u32, name: Option<&str>, expiration: Option<&str>) -> Result<()> {
-        let task = project.tasks.iter_mut().find(|t| t.id == id)
-            .ok_or_else(|| anyhow!("Task with id {} not found", id))?;
-
-        if let Some(n) = name { task.name = n.to_string(); }
-        if let Some(exp) = expiration { task.expiration = parse_to_unix(exp); }
-
-        Ok(())
-    }
-
-    pub fn finish_task(project: &mut Project, id: u32) -> Result<()> {
-        let task = project.tasks.iter_mut().find(|t| t.id == id)
-            .ok_or_else(|| anyhow!("Task with id {} not found", id))?;
-        task.finished = !task.finished;
-
-        Ok(())
-    }
 }
