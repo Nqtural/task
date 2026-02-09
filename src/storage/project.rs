@@ -1,10 +1,10 @@
 use anyhow::Result;
 use rusqlite::{OptionalExtension, params};
 
-use super::TaskStorage;
+use super::Storage;
 use crate::types::Project;
 
-impl TaskStorage {
+impl Storage {
     pub fn new_project(&self) -> Result<()> {
         self.conn.execute(
             "INSERT INTO projects (path)

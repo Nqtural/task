@@ -1,10 +1,10 @@
 use anyhow::Result;
 use rusqlite::params;
 
-use super::TaskStorage;
+use super::Storage;
 use crate::types::Task;
 
-impl TaskStorage {
+impl Storage {
     pub fn add_task(&self, project_id: u32, name: &str, expiration: Option<&str>) -> Result<()> {
         self.conn.execute(
             "INSERT INTO tasks (project_id, name, finished, expiration)
