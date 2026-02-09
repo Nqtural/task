@@ -1,5 +1,3 @@
-mod app;
-mod cli;
 mod io;
 mod storage;
 mod types;
@@ -9,8 +7,10 @@ use anyhow::Result;
 use clap::Parser;
 
 fn main() -> Result<()> {
-    let cli = cli::Cli::parse();
-    let mut io = io::TaskIO::new();
+    let args = io::Args::parse();
     let storage = storage::TaskStorage::new()?;
-    app::run(&storage, &mut io, cli)
+    match args.command {
+        io::Commands::Tui => todo!(),
+        _ => io::Cli::new(storage).run(args),
+    }
 }

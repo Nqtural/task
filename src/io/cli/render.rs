@@ -1,24 +1,13 @@
-use crate::types::{Project, Task};
 use anyhow::Result;
-use colored::*;
 use chrono::Utc;
+use colored::*;
+
+use crate::types::Project;
 use crate::utils::unix_to_relative;
-use std::io::{self, Write};
+use super::Cli;
 
-pub struct TaskIO;
-
-impl TaskIO {
-    pub fn new() -> Self {
-        Self
-    }
-}
-
-impl TaskIO {
-    pub fn new_project(&self) {
-        println!("Created new project");
-    }
-
-    pub fn list_projects(&self, projects: &[Project]) {
+impl Cli {
+    pub fn render_projects(&self, projects: &[Project]) -> Result<()> {
         let project_path_width = projects.iter().map(|p| p.path.len()).max().unwrap_or(1);
 
         println!("Projects:\n---------");
@@ -30,9 +19,11 @@ impl TaskIO {
                 if project.tasks.len() == 1 { "" } else { "s" }
             );
         }
+
+        Ok(())
     }
 
-    pub fn print_tasks(&self, project: &Project, hide_finished: bool) -> Result<()> {
+    pub fn render_tasks(&self, project: &Project, hide_finished: bool) -> Result<()> {
         if project.tasks.is_empty() {
             println!("No tasks yet. Create one with `task add \"My task\"`");
             return Ok(());
@@ -100,34 +91,15 @@ impl TaskIO {
         Ok(())
     }
 
-    pub fn confirm_delete_project(&self, project: &Project) -> Result<bool> {
-        print!(
-            "Are you sure you want to delete project '{}'? (contains {} task{}) (y/N): ",
-            project.path,
-            project.tasks.len(),
-            if project.tasks.len() == 1 { "" } else { "s"},
-        );
-        io::stdout().flush()?;
-
-        let mut input = String::new();
-        io::stdin().read_line(&mut input)?;
-        Ok(input.to_lowercase().contains('y'))
+    pub fn render_new_project(&self) {
+        println!("Created new project");
     }
 
-    pub fn confirm_delete_task(&self, task: &Task) -> Result<bool> {
-        print!("Are you sure you want to delete task '{}'? (y/N): ", task.name);
-        io::stdout().flush()?;
-
-        let mut input = String::new();
-        io::stdin().read_line(&mut input)?;
-        Ok(input.to_lowercase().contains('y'))
-    }
-
-    pub fn project_not_found(&self) {
+    pub fn render_project_not_found(&self) {
         println!("Project not found");
     }
 
-    pub fn task_not_found(&self) {
+    pub fn render_task_not_found(&self) {
         println!("Task not found");
     }
 }
