@@ -1,7 +1,7 @@
 use anyhow::Result;
 
-use crate::types::{Project, Task};
 use super::Cli;
+use crate::types::{Project, Task};
 
 impl Cli {
     pub fn resolve_project(&self, input: Option<String>) -> Result<Option<Project>> {
@@ -17,12 +17,11 @@ impl Cli {
     }
 
     pub fn resolve_task(&self, project_id: u32, number: usize) -> Result<Option<Task>> {
-        Ok(
-            self.storage
-                .get_tasks(project_id)?
-                // get number - 1 because task 0 is displayed as 1
-                .get(number - 1)
-                .and_then(|t| self.storage.get_task(t.id).ok())
-        )
+        Ok(self
+            .storage
+            .get_tasks(project_id)?
+            // get number - 1 because task 0 is displayed as 1
+            .get(number - 1)
+            .and_then(|t| self.storage.get_task(t.id).ok()))
     }
 }

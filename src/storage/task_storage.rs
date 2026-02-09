@@ -9,10 +9,7 @@ pub struct TaskStorage {
 impl TaskStorage {
     pub fn new() -> Result<Self> {
         let conn = Connection::open(get_storage_path()?)?;
-        conn.execute(
-            "PRAGMA foreign_keys = ON",
-            [],
-        )?;
+        conn.execute("PRAGMA foreign_keys = ON", [])?;
         conn.execute(
             "CREATE TABLE IF NOT EXISTS projects(
                 id INTEGER PRIMARY KEY,

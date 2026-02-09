@@ -1,16 +1,11 @@
 use anyhow::Result;
 use rusqlite::params;
 
-use crate::types::Task;
 use super::TaskStorage;
+use crate::types::Task;
 
 impl TaskStorage {
-    pub fn add_task(
-        &self,
-        project_id: u32,
-        name: &str,
-        expiration: Option<&str>,
-    ) -> Result<()> {
+    pub fn add_task(&self, project_id: u32, name: &str, expiration: Option<&str>) -> Result<()> {
         self.conn.execute(
             "INSERT INTO tasks (project_id, name, finished, expiration)
             VALUES (?1, ?2, ?3, ?4)",
@@ -58,10 +53,12 @@ impl TaskStorage {
     }
 
     pub fn get_task(&self, task_id: u32) -> Result<Task> {
-        Ok(self.conn.prepare(
-            "SELECT * FROM tasks
+        Ok(self
+            .conn
+            .prepare(
+                "SELECT * FROM tasks
             WHERE id = ?1",
-        )?
+            )?
             .query_row([task_id], |row| {
                 Ok(Task {
                     id: row.get(0)?,
@@ -70,16 +67,17 @@ impl TaskStorage {
                     finished: row.get(3)?,
                     expiration: row.get(4)?,
                 })
-            })?
-        )
+            })?)
     }
 
     pub fn get_tasks(&self, project_id: u32) -> Result<Vec<Task>> {
-        Ok(self.conn.prepare(
-            "SELECT * FROM tasks
+        Ok(self
+            .conn
+            .prepare(
+                "SELECT * FROM tasks
             WHERE project_id = ?1
-            ORDER BY id"
-        )?
+            ORDER BY id",
+            )?
             .query_map([project_id], |row| {
                 Ok(Task {
                     id: row.get(0)?,
