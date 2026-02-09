@@ -4,9 +4,7 @@ use clap::{Parser, Subcommand};
 pub enum ProjectCommands {
     New,
     List,
-    Delete {
-        project: Option<String>,
-    },
+    Delete { project: Option<String> },
 }
 
 #[derive(Subcommand)]
