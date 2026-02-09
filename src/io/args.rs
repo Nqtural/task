@@ -1,13 +1,5 @@
 use clap::{Parser, Subcommand};
 
-#[derive(Parser)]
-#[command(name = "task")]
-#[command(about = "Simple CLI task manager")]
-pub struct Cli {
-    #[command(subcommand)]
-    pub command: Commands,
-}
-
 #[derive(Subcommand)]
 pub enum ProjectCommands {
     New,
@@ -52,4 +44,13 @@ pub enum Commands {
         number: usize,
         project: Option<String>,
     },
+    Tui,
+}
+
+#[derive(Parser)]
+#[command(name = "task")]
+#[command(about = "Simple CLI task manager")]
+pub struct Args {
+    #[command(subcommand)]
+    pub command: Commands,
 }
