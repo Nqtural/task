@@ -8,7 +8,7 @@ use clap::Parser;
 
 fn main() -> Result<()> {
     let args = io::Args::parse();
-    let storage = storage::TaskStorage::new()?;
+    let storage = storage::Storage::new()?;
     match args.command {
         io::Commands::Tui => todo!(),
         _ => io::Cli::new(storage).run(args),
