@@ -1,6 +1,5 @@
-use chrono::{
-    DateTime, Datelike, Duration, Local, NaiveDate, NaiveTime, TimeZone, Timelike, Utc,
-};
+use anyhow::Result;
+use chrono::{DateTime, Datelike, Duration, Local, NaiveDate, NaiveTime, TimeZone, Timelike, Utc};
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
@@ -17,13 +16,13 @@ impl Time {
         self.epoch
     }
 
-    pub fn from_str(input: &str) -> Option<Self> {
+    pub fn from_str(input: &str) -> Result<Option<Self>> {
         let now = Local::now();
 
-        parse_relative_duration(input, now)
+        Ok(parse_relative_duration(input, now)?
             .or_else(|| parse_relative_clock(input, now))
             .or_else(|| parse_absolute_datetime(input, now))
-            .map(|dt| Self::new(dt.with_timezone(&Utc).timestamp()))
+            .map(|dt| Self::new(dt.with_timezone(&Utc).timestamp())))
     }
 
     pub fn format_relative(self) -> String {
@@ -31,7 +30,7 @@ impl Time {
     }
 }
 
-fn parse_relative_duration(input: &str, base: DateTime<Local>) -> Option<DateTime<Local>> {
+fn parse_relative_duration(input: &str, base: DateTime<Local>) -> Result<Option<DateTime<Local>>> {
     let mut chars = input.chars().peekable();
     let mut years = 0;
     let mut months = 0;
@@ -40,60 +39,56 @@ fn parse_relative_duration(input: &str, base: DateTime<Local>) -> Option<DateTim
     while chars.peek().is_some() {
         let mut num = 0i64;
         while let Some(c) = chars.peek().and_then(|c| c.to_digit(10)) {
-            num = num * 10 + c as i64;
+            num = num * 10 + i64::from(c);
             chars.next();
         }
 
-        match chars.next()? {
-            'y' => {
+        match chars.next() {
+            Some('y') => {
                 years += num;
-                continue;
             }
-            'm' => {
+            Some('m') => {
                 if chars.peek() == Some(&'o') {
                     chars.next();
                     months += num;
-                    continue;
                 } else {
                     seconds += num * 60;
-                    continue;
                 }
             }
-            'w' => {
+            Some('w') => {
                 seconds += num * 7 * 24 * 3600;
-                continue;
             }
-            'd' => {
+            Some('d') => {
                 seconds += num * 24 * 3600;
-                continue;
             }
-            'h' => {
+            Some('h') => {
                 seconds += num * 3600;
-                continue;
             }
-            's' => {
+            Some('s') => {
                 seconds += num;
-                continue;
             }
-            _ => return None,
-        };
+            Some(_) | None => return Ok(None),
+        }
     }
 
     let mut dt = base;
     if years != 0 || months != 0 {
-        dt = add_years_months(dt, years, months)?;
+        dt = match add_years_months(dt, years, months)? {
+            Some(dt) => dt,
+            None => return Ok(None),
+        };
     }
 
-    Some(dt + Duration::seconds(seconds))
+    Ok(Some(dt + Duration::seconds(seconds)))
 }
 
 fn add_years_months(
     dt: DateTime<Local>,
     years: i64,
     months: i64,
-) -> Option<DateTime<Local>> {
-    let mut year = dt.year() + years as i32;
-    let mut month = dt.month() as i64 + months;
+) -> Result<Option<DateTime<Local>>> {
+    let mut year = dt.year() + i32::try_from(years)?;
+    let mut month = i64::from(dt.month()) + months;
 
     while month > 12 {
         month -= 12;
@@ -104,11 +99,13 @@ fn add_years_months(
         year -= 1;
     }
 
-    let day = dt.day().min(days_in_month(year, month as u32));
-    let date = NaiveDate::from_ymd_opt(year, month as u32, day)?;
+    let day = dt.day().min(days_in_month(year, u32::try_from(month)?));
+    let Some(date) = NaiveDate::from_ymd_opt(year, u32::try_from(month)?, day) else {
+        return Ok(None);
+    };
     let time = dt.time();
 
-    Local.from_local_datetime(&date.and_time(time)).single()
+    Ok(Local.from_local_datetime(&date.and_time(time)).single())
 }
 
 fn days_in_month(year: i32, month: u32) -> u32 {
@@ -164,6 +161,11 @@ fn parse_absolute_datetime(input: &str, now: DateTime<Local>) -> Option<DateTime
     Local.from_local_datetime(&date.and_time(time)).single()
 }
 
+#[allow(clippy::cast_possible_wrap)]
+fn time_difference(end: u32, start: u32) -> i32 {
+    end as i32 - start as i32
+}
+
 fn format_relative(epoch: i64) -> String {
     let now = Local::now();
     let target = Local.timestamp_opt(epoch, 0).single().unwrap();
@@ -177,12 +179,12 @@ fn format_relative(epoch: i64) -> String {
         end = now;
     }
 
-    let mut years = end.year() - start.year();
-    let mut months = end.month() as i32 - start.month() as i32;
-    let mut days = end.day() as i32 - start.day() as i32;
-    let mut hours = end.hour() as i32 - start.hour() as i32;
-    let mut minutes = end.minute() as i32 - start.minute() as i32;
-    let mut seconds = end.second() as i32 - start.second() as i32;
+    let mut years = time_difference(end.year().cast_unsigned(), start.year().cast_unsigned());
+    let mut months = time_difference(end.month(), start.month());
+    let mut days = time_difference(end.day(), start.day());
+    let mut hours = time_difference(end.hour(), start.hour());
+    let mut minutes = time_difference(end.minute(), start.minute());
+    let mut seconds = time_difference(end.second(), start.second());
 
     // normalize negative units
     if seconds < 0 {
@@ -198,9 +200,17 @@ fn format_relative(epoch: i64) -> String {
         days -= 1;
     }
     if days < 0 {
-        let prev_month = if end.month() == 1 { 12 } else { end.month() - 1 };
-        let prev_year = if prev_month == 12 { end.year() - 1 } else { end.year() };
-        days += days_in_month(prev_year, prev_month) as i32;
+        let prev_month = if end.month() == 1 {
+            12
+        } else {
+            end.month() - 1
+        };
+        let prev_year = if prev_month == 12 {
+            end.year() - 1
+        } else {
+            end.year()
+        };
+        days += days_in_month(prev_year, prev_month).cast_signed();
         months -= 1;
     }
     if months < 0 {
@@ -233,9 +243,5 @@ fn format_relative(epoch: i64) -> String {
     }
 
     let out: String = parts.iter().take(2).cloned().collect();
-    if past {
-        format!("Overdue {out}")
-    } else {
-        out
-    }
+    if past { format!("Overdue {out}") } else { out }
 }
