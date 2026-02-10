@@ -36,7 +36,7 @@ impl Storage {
             "UPDATE tasks
              SET name = COALESCE(?1, name), expiration = COALESCE(?2, expiration)
              WHERE id = ?3",
-            params![name, expiration.map(|t| t.epoch()), task_id],
+            params![name, expiration.map(Time::epoch), task_id],
         )?;
 
         Ok(())

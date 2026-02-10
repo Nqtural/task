@@ -1,9 +1,9 @@
 use anyhow::Result;
 
-use crate::time::Time;
 use super::Cli;
 use super::prompts;
 use super::render;
+use crate::time::Time;
 
 impl Cli {
     pub fn new_project(&self) -> Result<()> {
@@ -95,8 +95,14 @@ impl Cli {
         match project {
             Some(project) => match self.resolve_task(project.id, number)? {
                 Some(task) => {
-                    self.storage
-                        .update_task(task.id, name, time.and_then(Time::from_str))?
+                    self.storage.update_task(
+                        task.id,
+                        name,
+                        match time {
+                            Some(t) => Time::from_str(t)?,
+                            None => None,
+                        },
+                    )?;
                 }
                 None => render::render_task_not_found(),
             },
