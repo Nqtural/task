@@ -1,12 +1,14 @@
 use serde::{Deserialize, Serialize};
 
+use crate::time::Time;
+
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Task {
     pub id: u32,
     pub project_id: u32,
     pub name: String,
     pub finished: bool,
-    pub expiration: Option<i64>,
+    pub expiration: Option<Time>,
 }
 
 #[derive(Debug, Default, Serialize, Deserialize)]
