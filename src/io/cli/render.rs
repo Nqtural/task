@@ -2,7 +2,6 @@ use chrono::Utc;
 use colored::Colorize;
 
 use crate::types::Project;
-use crate::utils::unix_to_relative;
 
 pub fn render_projects(projects: &[Project]) {
     let project_path_width = projects.iter().map(|p| p.path.len()).max().unwrap_or(1);
@@ -42,8 +41,8 @@ pub fn render_tasks(project: &Project, hide_finished: bool) {
         .map(|t| {
             if t.finished {
                 4 // evaluates to "DONE" later
-            } else if let Some(exp) = t.expiration {
-                unix_to_relative(exp).len()
+            } else if let Some(exp) = &t.expiration {
+                exp.format_relative().len()
             } else {
                 0
             }
@@ -66,16 +65,16 @@ pub fn render_tasks(project: &Project, hide_finished: bool) {
 
         let raw_last = if task.finished {
             "DONE".to_string()
-        } else if let Some(exp) = task.expiration {
-            unix_to_relative(exp)
+        } else if let Some(exp) = &task.expiration {
+            exp.format_relative()
         } else {
             String::new()
         };
 
         let styled_last = if task.finished {
             raw_last.green()
-        } else if let Some(exp) = task.expiration {
-            if exp - Utc::now().timestamp() <= 0 {
+        } else if let Some(exp) = &task.expiration {
+            if exp.epoch() - Utc::now().timestamp() <= 0 {
                 raw_last.red()
             } else {
                 raw_last.bright_black()

@@ -2,6 +2,7 @@ use anyhow::Result;
 use rusqlite::params;
 
 use super::Storage;
+use crate::time::Time;
 use crate::types::Task;
 
 impl Storage {
@@ -29,13 +30,13 @@ impl Storage {
         &self,
         task_id: u32,
         name: Option<&str>,
-        expiration: Option<i64>,
+        expiration: Option<Time>,
     ) -> Result<()> {
         self.conn.execute(
             "UPDATE tasks
              SET name = COALESCE(?1, name), expiration = COALESCE(?2, expiration)
              WHERE id = ?3",
-            params![name, expiration, task_id],
+            params![name, expiration.map(|t| t.epoch()), task_id],
         )?;
 
         Ok(())
@@ -65,7 +66,7 @@ impl Storage {
                     project_id: row.get(1)?,
                     name: row.get(2)?,
                     finished: row.get(3)?,
-                    expiration: row.get(4)?,
+                    expiration: row.get::<_, Option<i64>>(4)?.map(Time::new),
                 })
             })?)
     }
@@ -84,7 +85,7 @@ impl Storage {
                     project_id: row.get(1)?,
                     name: row.get(2)?,
                     finished: row.get(3)?,
-                    expiration: row.get(4)?,
+                    expiration: row.get::<_, Option<i64>>(4)?.map(Time::new),
                 })
             })?
             .collect::<Result<Vec<_>, _>>()?)
