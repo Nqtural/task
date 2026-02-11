@@ -23,8 +23,8 @@ impl Storage {
         Ok(())
     }
 
-    pub fn get_current_project(&self) -> Result<Option<u32>> {
-        self.find_project_by_dir_name(&get_cwd()?)
+    pub fn get_current_project_id(&self) -> Result<Option<u32>> {
+        self.find_project_id_by_dir_name(&get_cwd()?)
     }
 
     pub fn get_project(&self, id: u32) -> Result<Option<Project>> {
@@ -76,7 +76,7 @@ impl Storage {
         Ok(projects)
     }
 
-    pub fn find_project_by_dir_name(&self, name: &str) -> Result<Option<u32>> {
+    pub fn find_project_id_by_dir_name(&self, name: &str) -> Result<Option<u32>> {
         Ok(self
             .conn
             .query_row(
