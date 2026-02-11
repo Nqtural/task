@@ -6,8 +6,8 @@ use crate::types::{Project, Task};
 impl Cli {
     pub fn resolve_project(&self, input: Option<String>) -> Result<Option<Project>> {
         let id = match input {
-            Some(name) => self.storage.find_project_by_dir_name(&name)?,
-            None => self.storage.get_current_project()?,
+            Some(name) => self.storage.find_project_id_by_dir_name(&name)?,
+            None => self.storage.get_current_project_id()?,
         };
 
         match id {
