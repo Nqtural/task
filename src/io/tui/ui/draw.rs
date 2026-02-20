@@ -51,12 +51,17 @@ impl Ui {
                         Line::from("Press (y) to confirm, (n) to cancel"),
                     ],
                 ),
+                Prompt::Info(message) => render_popup(
+                    frame,
+                    area,
+                    vec![Line::from(*message), Line::from("Press any key to dismiss")],
+                ),
                 Prompt::Text(text) => render_popup(
                     frame,
                     area,
                     vec![
                         Line::from("Enter text (ESC to cancel, Enter to submit):"),
-                        Line::from(text.iter().collect::<String>()),
+                        Line::from(text.1.iter().collect::<String>()),
                     ],
                 ),
                 Prompt::None => {}

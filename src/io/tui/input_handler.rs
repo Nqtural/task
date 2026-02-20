@@ -16,6 +16,7 @@ pub fn get_action(ticks_per_second: f32, prompt: &Prompt) -> Result<Action> {
                 ..
             }) => match *prompt {
                 Prompt::Confirm(_) => handle_confirm_prompt_keys(code),
+                Prompt::Info(_) => Action::PromptCancel,
                 Prompt::None => handle_normal_keys(code),
                 Prompt::Text(_) => handle_text_prompt_keys(code),
             },
@@ -45,6 +46,7 @@ fn handle_text_prompt_keys(code: KeyCode) -> Action {
 
 fn handle_normal_keys(code: KeyCode) -> Action {
     match code {
+        KeyCode::Char('a') => Action::Add,
         KeyCode::Char('d') => Action::Delete,
         KeyCode::Char('e') => Action::EditExpiration,
         KeyCode::Char('f') => Action::ToggleFinish,

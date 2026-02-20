@@ -1,7 +1,8 @@
 #[derive(Default)]
 pub enum Prompt {
     Confirm(&'static str),
+    Info(&'static str),
     #[default]
     None,
-    Text(Vec<char>),
+    Text((&'static str, Vec<char>)),
 }

@@ -8,8 +8,22 @@ use super::prompt::Prompt;
 use super::selection::Level;
 
 impl Tui {
+    fn add_task(&self) -> Result<()> {
+        if let Some(project_id) = self.state.selection.get_selected_project_id() {
+            if let Prompt::Text(input) = &self.state.prompt {
+                self.storage
+                    .add_task(project_id, &input.1.iter().collect::<String>(), None)
+            } else {
+                Err(anyhow!("error: unable to read prompt input"))
+            }
+        } else {
+            Err(anyhow!("error: unable to get selected project id"))
+        }
+    }
+
     pub fn execute_pending_action(&self) -> Result<()> {
         match self.state.pending_action {
+            PendingAction::Add => self.add_task(),
             PendingAction::Delete => self.delete_selected(),
             PendingAction::EditExpiration => self.submit_task_expiration(),
             PendingAction::EditName => self.submit_task_name(),
@@ -40,6 +54,22 @@ impl Tui {
         }
     }
 
+    pub fn prompt_add(&mut self) {
+        match self.state.selection.level {
+            Level::Project => self.prompt_add_project(),
+            Level::Task => self.prompt_add_task(),
+        }
+    }
+
+    fn prompt_add_project(&mut self) {
+        self.state.prompt =
+            Prompt::Info("Cannot add project from TUI; use `task project new` in a directory");
+    }
+
+    fn prompt_add_task(&mut self) {
+        self.state.prompt = Prompt::Text(("Enter name of task:", Vec::new()));
+    }
+
     pub fn prompt_delete_selected(&mut self) {
         match self.state.selection.level {
             Level::Project => self.prompt_delete_project(),
@@ -59,7 +89,8 @@ impl Tui {
         if let Some(task_id) = self.state.selection.get_selected_task_id() {
             let task = self.storage.get_task(task_id)?;
             let text = task.expiration.map_or(String::new(), Time::format_relative);
-            self.state.prompt = Prompt::Text(text.chars().collect::<Vec<char>>());
+            self.state.prompt =
+                Prompt::Text(("Edit expiration time:", text.chars().collect::<Vec<char>>()));
         }
 
         Ok(())
@@ -68,7 +99,8 @@ impl Tui {
     pub fn prompt_edit_name(&mut self) -> Result<()> {
         if let Some(task_id) = self.state.selection.get_selected_task_id() {
             let task = self.storage.get_task(task_id)?;
-            self.state.prompt = Prompt::Text(task.name.chars().collect::<Vec<char>>());
+            self.state.prompt =
+                Prompt::Text(("Edit name:", task.name.chars().collect::<Vec<char>>()));
         }
 
         Ok(())
@@ -80,7 +112,7 @@ impl Tui {
                 let task = self.storage.get_task(task_id)?;
                 self.storage.update_task(
                     task_id,
-                    Some(&input.iter().collect::<String>()),
+                    Some(&input.1.iter().collect::<String>()),
                     task.expiration,
                 )
             } else {
@@ -98,7 +130,7 @@ impl Tui {
                 self.storage.update_task(
                     task_id,
                     Some(&task.name),
-                    Time::from_str(&input.iter().collect::<String>())?,
+                    Time::from_str(&input.1.iter().collect::<String>())?,
                 )
             } else {
                 Err(anyhow!("error: unable to read prompt input"))
