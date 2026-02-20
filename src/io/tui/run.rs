@@ -3,6 +3,8 @@ use anyhow::Result;
 use super::Tui;
 use super::action::Action;
 use super::input_handler::get_action;
+use super::pending_action::PendingAction;
+use super::prompt::Prompt;
 
 const TICKS_PER_SECOND: f32 = 1.0;
 
@@ -35,12 +37,45 @@ impl Tui {
         loop {
             self.ui.draw(&self.state)?;
 
-            match get_action(TICKS_PER_SECOND)? {
+            match get_action(TICKS_PER_SECOND, &self.state.prompt)? {
+                Action::Delete => {
+                    self.state.pending_action = PendingAction::Delete;
+                    self.prompt_delete_selected();
+                }
+                Action::EditExpiration => {
+                    self.state.pending_action = PendingAction::EditExpiration;
+                    self.prompt_edit_expiration()?;
+                }
+                Action::EditName => {
+                    self.state.pending_action = PendingAction::EditName;
+                    self.prompt_edit_name()?;
+                }
                 Action::MoveDown => self.state.selection.next(),
                 Action::MoveLeft | Action::MoveRight => self.state.selection.toggle_level(),
                 Action::MoveUp => self.state.selection.previous(),
+                Action::None => continue,
+                Action::PromptAccept => {
+                    self.execute_pending_action()?;
+                    self.state.pending_action = PendingAction::None;
+                    self.state.prompt = Prompt::None;
+                }
+                Action::PromptBackspace => {
+                    if let Prompt::Text(text) = &mut self.state.prompt {
+                        text.pop();
+                    }
+                }
+                Action::PromptCancel => {
+                    self.state.pending_action = PendingAction::None;
+                    self.state.prompt = Prompt::None;
+                }
+                Action::PromptInput(c) => {
+                    if let Prompt::Text(text) = &mut self.state.prompt {
+                        text.push(c);
+                    }
+                }
                 Action::Quit => return Ok(()),
                 Action::Tick => {}
+                Action::ToggleFinish => self.toggle_finish(),
             }
 
             *self.state.projects.borrow_mut() = self.storage.get_all_projects()?;
