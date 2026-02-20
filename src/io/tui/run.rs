@@ -38,6 +38,10 @@ impl Tui {
             self.ui.draw(&self.state)?;
 
             match get_action(TICKS_PER_SECOND, &self.state.prompt)? {
+                Action::Add => {
+                    self.state.pending_action = PendingAction::Add;
+                    self.prompt_add();
+                }
                 Action::Delete => {
                     self.state.pending_action = PendingAction::Delete;
                     self.prompt_delete_selected();
@@ -60,7 +64,7 @@ impl Tui {
                     self.state.prompt = Prompt::None;
                 }
                 Action::PromptBackspace => {
-                    if let Prompt::Text(text) = &mut self.state.prompt {
+                    if let Prompt::Text((_, text)) = &mut self.state.prompt {
                         text.pop();
                     }
                 }
@@ -69,7 +73,7 @@ impl Tui {
                     self.state.prompt = Prompt::None;
                 }
                 Action::PromptInput(c) => {
-                    if let Prompt::Text(text) = &mut self.state.prompt {
+                    if let Prompt::Text((_, text)) = &mut self.state.prompt {
                         text.push(c);
                     }
                 }
