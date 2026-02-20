@@ -94,4 +94,17 @@ impl Selection {
             Level::Project
         }
     }
+
+    pub fn get_selected_project_id(&self) -> Option<u32> {
+        self.projects.borrow().get(self.project?).map(|p| p.id)
+    }
+
+    pub fn get_selected_task_id(&self) -> Option<u32> {
+        self.projects
+            .borrow()
+            .get(self.project?)
+            .map(|p| &p.tasks)?
+            .get(self.task?)
+            .map(|t| t.id)
+    }
 }

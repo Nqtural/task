@@ -1,15 +1,17 @@
 use std::cell::RefCell;
 use std::rc::Rc;
 
+use super::pending_action::PendingAction;
+use super::prompt::Prompt;
 use super::selection::Selection;
 use crate::types::Project;
 
 #[derive(Default)]
 pub struct State {
-    pub selection: Selection,
-    pub _show_prompt: bool,
-    pub _prompt_text: Option<String>,
+    pub pending_action: PendingAction,
     pub projects: Rc<RefCell<Vec<Project>>>,
+    pub prompt: Prompt,
+    pub selection: Selection,
 }
 
 impl State {
