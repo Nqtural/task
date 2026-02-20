@@ -10,10 +10,28 @@ pub enum Action {
     MoveUp,
     None,
     PromptAccept,
-    PromptBackspace,
     PromptCancel,
+    PromptDelete(Amount),
     PromptInput(char),
+    PromptNavigate(Direction),
     Quit,
     Tick,
     ToggleFinish,
+}
+
+#[derive(Debug)]
+pub enum Amount {
+    PreviousCharacter,
+    CurrentCharacter,
+    Word,
+}
+
+#[derive(Debug)]
+pub enum Direction {
+    Backwards,
+    BackwardsWord,
+    End,
+    Forwards,
+    ForwardsWord,
+    Start,
 }

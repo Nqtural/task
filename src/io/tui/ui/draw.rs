@@ -3,7 +3,7 @@ use ratatui::{
     Frame,
     layout::{Alignment, Constraint, Direction, Layout, Rect},
     style::{Color, Modifier, Style},
-    text::Line,
+    text::{Line, Span},
     widgets::{Block, Borders, Cell, Clear, Paragraph, Row, Table, TableState},
 };
 
@@ -50,19 +50,22 @@ impl Ui {
                         Line::from(*message),
                         Line::from("Press (y) to confirm, (n) to cancel"),
                     ],
+                    None,
                 ),
                 Prompt::Info(message) => render_popup(
                     frame,
                     area,
                     vec![Line::from(*message), Line::from("Press any key to dismiss")],
+                    None,
                 ),
-                Prompt::Text(text) => render_popup(
+                Prompt::Text((_, text, cursor)) => render_popup(
                     frame,
                     area,
                     vec![
                         Line::from("Enter text (ESC to cancel, Enter to submit):"),
-                        Line::from(text.1.iter().collect::<String>()),
+                        Line::from(text.iter().collect::<String>()),
                     ],
+                    Some(cursor),
                 ),
                 Prompt::None => {}
             }
@@ -72,17 +75,48 @@ impl Ui {
     }
 }
 
-fn render_popup(frame: &mut Frame, area: Rect, text: Vec<Line>) {
+fn render_popup(frame: &mut Frame, area: Rect, mut text: Vec<Line>, cursor: Option<&usize>) {
     let popup_area = centered_rect(20, 60, area);
 
-    // Clear background
     frame.render_widget(Clear, popup_area);
 
     let block = Block::default().title("Prompt").borders(Borders::ALL);
 
-    let text = Paragraph::new(text).block(block);
+    // second line contains editable text
+    if let Some(line) = text.get_mut(1) {
+        let content: String = line.spans.iter().map(|s| s.content.as_ref()).collect();
 
-    frame.render_widget(text, popup_area);
+        if let Some(&cursor) = cursor {
+            let chars: Vec<char> = content.chars().collect();
+            let len = chars.len();
+
+            let before: String = chars[..cursor].iter().collect();
+            let after: String = if cursor < len {
+                chars[cursor + 1..].iter().collect()
+            } else {
+                String::new()
+            };
+
+            let cursor_span = if cursor < len {
+                Span::styled(
+                    chars[cursor].to_string(),
+                    Style::default().add_modifier(Modifier::UNDERLINED),
+                )
+            } else {
+                // Cursor at end — underline a space
+                Span::styled(
+                    " ".to_string(),
+                    Style::default().add_modifier(Modifier::UNDERLINED),
+                )
+            };
+
+            *line = Line::from(vec![Span::raw(before), cursor_span, Span::raw(after)]);
+        }
+    }
+
+    let paragraph = Paragraph::new(text).block(block);
+
+    frame.render_widget(paragraph, popup_area);
 }
 
 fn centered_rect(percent_y: u16, percent_x: u16, r: Rect) -> Rect {
