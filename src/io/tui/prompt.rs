@@ -4,5 +4,5 @@ pub enum Prompt {
     Info(&'static str),
     #[default]
     None,
-    Text((&'static str, Vec<char>)),
+    Text((&'static str, Vec<char>, usize)),
 }
